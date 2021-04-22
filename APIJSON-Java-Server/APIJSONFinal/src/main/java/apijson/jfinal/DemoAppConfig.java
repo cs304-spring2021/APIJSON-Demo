@@ -46,6 +46,8 @@ import apijson.orm.Parser;
 import apijson.orm.SQLConfig;
 import apijson.orm.Verifier;
 
+import static apijson.demo.DemoVerifier.TAG;
+
 
 /**JFinalConfig
  * 右键这个类 > Run As > Java Application
@@ -99,15 +101,16 @@ public class DemoAppConfig extends JFinalConfig {
 		//			Log.e(TAG, "加载 SQLServer 驱动失败，请检查 pom.xml 中 net.sourceforge.jtds 版本是否存在以及可用 ！！！");
 		//		}
 		//		
-		//		try { //加载驱动程序
-		//			Log.d(TAG, "尝试加载 Oracle 驱动 <<<<<<<<<<<<<<<<<<<<< ");
-		//			Class.forName("oracle.jdbc.driver.OracleDriver");
-		//			Log.d(TAG, "成功加载 Oracle 驱动！>>>>>>>>>>>>>>>>>>>>> ");
-		//		}
-		//		catch (ClassNotFoundException e) {
-		//			e.printStackTrace();
-		//			Log.e(TAG, "加载 Oracle 驱动失败，请检查 pom.xml 中 com.oracle.jdbc 版本是否存在以及可用 ！！！");
-		//		}
+				try { //加载驱动程序
+					Log.d(TAG, "尝试加载 Oracle 驱动 <<<<<<<<<<<<<<<<<<<<< ");
+					Class.forName("oracle.jdbc.driver.OracleDriver");
+					Log.d(TAG, "成功加载 Oracle 驱动！>>>>>>>>>>>>>>>>>>>>> ");
+				}
+				catch (ClassNotFoundException e) {
+					e.printStackTrace();
+					Log.e(TAG, "加载 Oracle 驱动失败，请检查 pom.xml 中 com.oracle.jdbc 版本是否存在以及可用 ！！！");
+				}
+
 		//		
 		//		try { //加载驱动程序
 		//			Log.d(TAG, "尝试加载 DB2 驱动 <<<<<<<<<<<<<<<<<<<<< ");

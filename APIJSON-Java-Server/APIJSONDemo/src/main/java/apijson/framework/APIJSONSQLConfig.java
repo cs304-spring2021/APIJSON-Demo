@@ -12,53 +12,53 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
-package apijson.demo;
+package apijson.framework;
 
 import static apijson.framework.APIJSONConstant.ID;
 import static apijson.framework.APIJSONConstant.PRIVACY_;
 import static apijson.framework.APIJSONConstant.USER_;
 import static apijson.framework.APIJSONConstant.USER_ID;
 
+import java.util.List;
+
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.annotation.JSONField;
 
 import apijson.RequestMethod;
-import apijson.framework.APIJSONSQLConfig;
 import apijson.orm.AbstractSQLConfig;
+import apijson.orm.Join;
+import apijson.orm.SQLConfig;
 
 
 /**SQL配置
  * TiDB 用法和 MySQL 一致
  * @author Lemon
  */
-public class DemoSQLConfig extends APIJSONSQLConfig {
+public class APIJSONSQLConfig extends AbstractSQLConfig {
+	public static final String TAG = "APIJSONSQLConfig";
 
-	public DemoSQLConfig() {
-		super();
-	}
-	public DemoSQLConfig(RequestMethod method, String table) {
-		super(method, table);
-	}
-
+	public static Callback SIMPLE_CALLBACK;
+	public static APIJSONCreator APIJSON_CREATOR;
 	static {
-		DEFAULT_DATABASE = DATABASE_ORACLE;  //TODO 默认数据库类型，改成你自己的
+		DEFAULT_DATABASE = DATABASE_MYSQL;  //TODO 默认数据库类型，改成你自己的
 		DEFAULT_SCHEMA = "sys";  //TODO 默认模式名，改成你自己的，默认情况是 MySQL: sys, PostgreSQL: public, SQL Server: dbo, Oracle: 
+		//		TABLE_KEY_MAP.put(Access.class.getSimpleName(), "apijson_access");
 
-		//表名和数据库不一致的，需要配置映射关系。只使用 APIJSONORM 时才需要；
-		//这个 Demo 用了 apijson-framework 且调用了 APIJSONApplication.init
-		//(间接调用 DemoVerifier.init 方法读取数据库 Access 表来替代手动输入配置)，所以不需要。
-		//但如果 Access 这张表的对外表名与数据库实际表名不一致，仍然需要这里注册。例如
-		//		TABLE_KEY_MAP.put(Access.class.getSimpleName(), "access");
-
-		//表名映射，隐藏真实表名，对安全要求很高的表可以这么做
+		//  由 APIJSONVerifier.init 方法读取数据库 Access 表来替代手动输入配置
+		//		//表名映射，隐藏真实表名，对安全要求很高的表可以这么做
 		//		TABLE_KEY_MAP.put(User.class.getSimpleName(), "apijson_user");
 		//		TABLE_KEY_MAP.put(Privacy.class.getSimpleName(), "apijson_privacy");
 
-		//主键名映射
+		APIJSON_CREATOR = new APIJSONCreator();
+
 		SIMPLE_CALLBACK = new SimpleCallback() {
 
 			@Override
-			public AbstractSQLConfig getSQLConfig(RequestMethod method, String database, String schema, String table) {
-				return new DemoSQLConfig(method, table);
+			public SQLConfig getSQLConfig(RequestMethod method, String database, String schema, String table) {
+				SQLConfig config = APIJSON_CREATOR.createSQLConfig();
+				config.setMethod(method);
+				config.setTable(table);
+				return config;
 			}
 
 			//取消注释来实现自定义各个表的主键名
@@ -79,14 +79,10 @@ public class DemoSQLConfig extends APIJSONSQLConfig {
 			//			public Object newId(RequestMethod method, String database, String schema, String table) {
 			//				return null; // return null 则不生成 id，一般用于数据库自增 id
 			//			}
-			
-//			@Override
-//			public void onMissingKey4Combine(String name, JSONObject request, String combine, String item, String key) throws Exception {
-////				super.onMissingKey4Combine(name, request, combine, item, key);
-//			}
 		};
 
 	}
+
 
 
 	@Override
@@ -101,14 +97,11 @@ public class DemoSQLConfig extends APIJSONSQLConfig {
 			return "2016"; //TODO 改成你自己的
 		}
 		if (isOracle()) {
-			return "11c"; //TODO 改成你自己的
-		}
-		if (isDb2()) {
-			return "11.5"; //TODO 改成你自己的
+			return "18c"; //TODO 改成你自己的
 		}
 		return null;
 	}
-	
+
 	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息，用了 UnitAuto 则一定要加
 	@Override
 	public String getDBUri() {
@@ -122,14 +115,11 @@ public class DemoSQLConfig extends APIJSONSQLConfig {
 			return "jdbc:jtds:sqlserver://localhost:1433/pubs;instance=SQLEXPRESS"; //TODO 改成你自己的
 		}
 		if (isOracle()) {
-			return "jdbc:oracle:thin:@localhost:1521:XE"; //TODO 改成你自己的
-		}
-		if (isDb2()) {
-			return "jdbc:db2://localhost:50000/BLUDB"; //TODO 改成你自己的
+			return "jdbc:oracle:thin:@localhost:1521:orcl"; //TODO 改成你自己的
 		}
 		return null;
 	}
-	
+
 	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息，用了 UnitAuto 则一定要加
 	@Override
 	public String getDBAccount() {
@@ -143,14 +133,11 @@ public class DemoSQLConfig extends APIJSONSQLConfig {
 			return "sa";  //TODO 改成你自己的
 		}
 		if (isOracle()) {
-			return "sys";  //TODO 改成你自己的
-		}
-		if (isDb2()) {
-			return "db2admin"; //TODO 改成你自己的
+			return "scott";  //TODO 改成你自己的
 		}
 		return null;
 	}
-	
+
 	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息，用了 UnitAuto 则一定要加
 	@Override
 	public String getDBPassword() {
@@ -164,19 +151,10 @@ public class DemoSQLConfig extends APIJSONSQLConfig {
 			return "apijson@123";  //TODO 改成你自己的
 		}
 		if (isOracle()) {
-			return "oracle";  //TODO 改成你自己的
-		}
-		if (isDb2()) {
-			return "123"; //TODO 改成你自己的
+			return "tiger";  //TODO 改成你自己的
 		}
 		return null;
 	}
-	
-	//取消注释后，默认的 APIJSON 配置表会由业务表所在数据库模式 schema 改为自定义的
-	//	@Override
-	//	public String getConfigSchema() {
-	//		return "apijson";
-	//	}
 
 	//取消注释后，默认的数据库类型会由 MySQL 改为 PostgreSQL
 	//	@Override
@@ -185,26 +163,91 @@ public class DemoSQLConfig extends APIJSONSQLConfig {
 	//		return db == null ? DATABASE_POSTGRESQL : db;
 	//	}
 
-//	如果确定只用一种数据库，可以重写方法，这种数据库直接 return true，其它数据库直接 return false，来减少判断，提高性能
-		@Override
-		public boolean isMySQL() {
-			return false;
-		}
-		@Override
-		public boolean isPostgreSQL() {
-			return false;
-		}
-		@Override
-		public boolean isSQLServer() {
-			return false;
-		}
-		@Override
-		public boolean isOracle() {
-			return true;
-		}
-		@Override
-		public boolean isDb2() {
-			return false;
-		}
+	//如果确定只用一种数据库，可以重写方法，这种数据库直接 return true，其它数据库直接 return false，来减少判断，提高性能
+	//	@Override
+	//	public boolean isMySQL() {
+	//		return true;
+	//	}
+	//	@Override
+	//	public boolean isPostgreSQL() {
+	//		return false;
+	//	}
+	//	@Override
+	//	public boolean isSQLServer() {
+	//		return false;
+	//	}
+	//	@Override
+	//	public boolean isOracle() {
+	//		return false;
+	//	}
+
+	/**获取 APIJSON 配置表所在数据库模式 database，默认与业务表一块
+	 * @return
+	 */
+	public String getConfigDatabase() {
+		return getDatabase();
+	}
+	/**获取 APIJSON 配置表所在数据库模式 schema，默认与业务表一块
+	 * @return
+	 */
+	public String getConfigSchema() {
+		return getSchema();
+	}
+	/**是否为 APIJSON 配置表，如果和业务表一块，可以重写这个方法，固定 return false 来提高性能
+	 * @return
+	 */
+	public boolean isConfigTable() {
+		return CONFIG_TABLE_LIST.contains(getTable());
+	}
+	@Override
+	public String getSQLDatabase() {
+		String db = isConfigTable() ? getConfigDatabase() : super.getSQLDatabase();
+		return db == null ? DEFAULT_DATABASE : db;
+	}
+	@Override
+	public String getSQLSchema() {
+		String sch = isConfigTable() ? getConfigSchema() : super.getSQLSchema();
+		return sch == null ? DEFAULT_SCHEMA : sch;
+	}
+
+
+	@Override
+	public String getIdKey() {
+		return SIMPLE_CALLBACK.getIdKey(getDatabase(), getSchema(), getTable());
+	}
+
+	@Override
+	public String getUserIdKey() {
+		return SIMPLE_CALLBACK.getUserIdKey(getDatabase(), getSchema(), getTable());
+	}
+
+
+	public APIJSONSQLConfig() {
+		this(RequestMethod.GET);
+	}
+	public APIJSONSQLConfig(RequestMethod method) {
+		super(method);
+	}
+	public APIJSONSQLConfig(RequestMethod method, String table) {
+		super(method, table);
+	}
+	public APIJSONSQLConfig(RequestMethod method, int count, int page) {
+		super(method, count, page);
+	}
+
+
+
+	/**获取SQL配置
+	 * @param table
+	 * @param alias 
+	 * @param request
+	 * @param isProcedure 
+	 * @return
+	 * @throws Exception 
+	 */
+	public static SQLConfig newSQLConfig(RequestMethod method, String table, String alias, JSONObject request, List<Join> joinList, boolean isProcedure) throws Exception {
+		return newSQLConfig(method, table, alias, request, joinList, isProcedure, SIMPLE_CALLBACK);
+	}
+
 
 }
